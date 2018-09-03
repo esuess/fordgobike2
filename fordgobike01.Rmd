@@ -1,0 +1,562 @@
+---
+title: "Ford Go Bike"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+
+In this notebook I download and unzip the [Ford Go Bike](https://www.fordgobike.com/) [data](https://www.fordgobike.com/system-data). 
+
+```{r}
+library(tidyverse)
+library(tictoc)
+library(ggmap)
+library(skimr)
+library(lubridate)
+library(forcats)
+library(kableExtra)
+```
+
+Set working directory.
+
+```{r}
+setwd("~/GitHub/Stat6620/fordgobike")
+```
+
+Download the files.  First one is not zipped, the remaining are zipped.
+
+```{r}
+URL <- "https://s3.amazonaws.com/fordgobike-data/2017-fordgobike-tripdata.csv"
+download.file(URL, destfile = "./data/2017-fordgobike-tripdata.csv", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201801-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201801-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201802-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201802-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201803-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201803-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201804-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201804-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201805-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201805-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201806-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201806-fordgobike-tripdata.csv.zip", method="curl")
+URL <- "https://s3.amazonaws.com/fordgobike-data/201807-fordgobike-tripdata.csv.zip"
+download.file(URL, destfile = "./data/201807-fordgobike-tripdata.csv.zip", method="curl")
+```
+
+Loop over the one value in the url and filename that changes.
+
+```{r, eval=FALSE}
+
+URL <- "https://s3.amazonaws.com/fordgobike-data/2017-fordgobike-tripdata.csv"
+download.file(URL, destfile = "./data/2017-fordgobike-tripdata.csv", method="curl")
+
+for (i in 1:7) {
+URL <- paste0("https://s3.amazonaws.com/fordgobike-data/20180",i,"-fordgobike-tripdata.csv.zip")
+download.file(URL, destfile = paste0("./data/20180",i,"-fordgobike-tripdata.csv.zip"), method="curl")
+}
+```
+
+
+
+Unzip downloaded files.
+
+```{r}
+unzip("./data/201801-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201802-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201803-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201804-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201805-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201806-fordgobike-tripdata.csv.zip",exdir="./data")
+unzip("./data/201807-fordgobike-tripdata.csv.zip",exdir="./data")
+```
+
+Clean up data directory.
+
+```{r}
+fn <- "./data/201801-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201802-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201803-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201804-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201805-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201806-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+fn <- "./data/201807-fordgobike-tripdata.csv.zip"
+if (file.exists(fn)) file.remove(fn)
+```
+
+Read the.csv files
+
+```{r message=FALSE}
+fordgobike2017 <- read_csv(file="./data/2017-fordgobike-tripdata.csv")
+fordgobike201801 <- read_csv(file="./data/201801-fordgobike-tripdata.csv")
+fordgobike201802 <- read_csv(file="./data/201802-fordgobike-tripdata.csv")
+fordgobike201803 <- read_csv(file="./data/201803-fordgobike-tripdata.csv")
+fordgobike201804 <- read_csv(file="./data/201804-fordgobike-tripdata.csv")
+fordgobike201805 <- read_csv(file="./data/201805-fordgobike-tripdata.csv")
+fordgobike201806 <- read_csv(file="./data/201806-fordgobike-tripdata.csv")
+fordgobike201807 <- read_csv(file="./data/201807-fordgobike-tripdata.csv")
+```
+
+Check the head() and tail() of the data.frames that are loaded.
+
+
+```{r}
+head(fordgobike2017) 
+head(fordgobike201801)
+head(fordgobike201802)
+head(fordgobike201803)
+head(fordgobike201804)
+head(fordgobike201805)
+head(fordgobike201806)
+head(fordgobike201807)
+```
+
+
+
+```{r}
+tail(fordgobike2017)
+tail(fordgobike201801)
+tail(fordgobike201802)
+tail(fordgobike201803)
+tail(fordgobike201804)
+tail(fordgobike201805)
+tail(fordgobike201806)
+tail(fordgobike201807)
+```
+
+
+```{r}
+dim(fordgobike2017)
+
+fordgobike2017 %>% count()
+
+```
+
+
+```{r}
+
+fordgobike201801 %>% count()
+fordgobike201802 %>% count()
+fordgobike201803 %>% count()
+fordgobike201804 %>% count()
+fordgobike201805 %>% count()
+fordgobike201806 %>% count()
+fordgobike201807 %>% count()
+
+```
+
+
+```{r}
+glimpse(fordgobike201805)
+glimpse(fordgobike201806)
+glimpse(fordgobike201807)
+
+
+fordgobike201806 <- fordgobike201806 %>%
+        mutate(start_station_id = as.integer(start_station_id),
+               end_station_id= as.integer(start_station_id) )
+
+fordgobike201807 <- fordgobike201807 %>%
+        mutate(start_station_id = as.integer(start_station_id),
+               end_station_id= as.integer(start_station_id) )
+
+fordgobike2018 <- bind_rows(fordgobike201801, fordgobike201802, fordgobike201803, fordgobike201804,
+                            fordgobike201805, fordgobike201806, fordgobike201807)
+
+glimpse(fordgobike2018)
+
+```
+
+
+
+```{r}
+fordgobike2018 %>% select(start_station_id,start_station_name, start_station_latitude,start_station_longitude) %>%
+  arrange(start_station_id) %>%
+  distinct() %>%
+  head() %>%
+  kable(, format = "rst")
+```
+
+
+
+
+```{r}
+dim(fordgobike2017)
+
+fordgobike2017 %>% count()
+
+nrow(fordgobike201801) + nrow(fordgobike201802) + nrow(fordgobike201803) + nrow(fordgobike201804)
+
+dim(fordgobike2018)
+
+fordgobike2018 %>% count()
+
+fordgobike <- bind_rows(fordgobike2017, fordgobike2018)
+
+dim(fordgobike)
+
+
+fordgobike %>% count()
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(age = 2018 - member_birth_year)
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(year=year(start_time), month=month(start_time), day=day(start_time) )
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+fordgobike <- fordgobike %>% mutate(week_day = wday(start_time) )
+
+levels <- c("M","T","W","TH","F","SAT","SUN")
+
+fordgobike$week_day <- factor(fordgobike$week_day, levels = levels)
+
+fordgobike %>% count() 
+
+dim(fordgobike)
+
+```
+
+
+
+```{r}
+
+today()
+
+now()
+```
+
+Age
+
+```{r warning=FALSE}
+fordgobike %>% group_by( age ) %>% count()
+
+fordgobike %>% group_by( age ) %>% summary()
+
+skim(fordgobike)
+
+fordgobike %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age <= 100) %>% ggplot(aes(x=age)) + geom_histogram()
+
+fordgobike %>% filter(age > 100) %>% ggplot(aes(x=age)) + geom_histogram()
+```
+
+
+```{r}
+fordgobike %>% group_by( member_gender, age ) %>% count()
+
+fordgobike %>% ggplot(aes(x=age, class=member_gender)) + geom_histogram()
+
+fordgobike %>% ggplot(aes(x=age, class=member_gender)) + geom_histogram(aes(y=..density..))
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age)) + geom_histogram()
+```
+
+```{r}
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age, color=member_gender)) + 
+  geom_histogram(position="identity") + 
+  facet_grid(member_gender ~ .)
+
+fordgobike %>% filter(age <= 80) %>% ggplot(aes(x=age, color=member_gender)) + 
+  geom_histogram(aes(y=..density..),position="identity") + 
+  facet_grid(member_gender ~ .)
+
+```
+
+Year and day of week.
+
+```{r}
+
+fordgobike %>% ggplot(aes(x=year)) + geom_bar()
+fordgobike %>% ggplot(aes(x=month)) + geom_bar() + facet_grid(year ~ .)
+fordgobike %>% ggplot(aes(x=day)) + geom_bar() + facet_grid(year ~ .)
+
+
+```
+
+```{r}
+fordgobike2018 <- fordgobike2018 %>% filter(start_station_latitude < 38 & start_station_longitude < 120 )
+
+fordgobike_subset <- fordgobike2018 %>% select(start_station_longitude,start_station_latitude)
+
+fordgobike_subset %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude)) +
+  geom_point()
+```
+
+
+
+
+
+```{r}
+library(biganalytics)
+
+# run in parallel, the doMC package runs on Windows
+library(doParallel)
+registerDoParallel(cores = 8)
+
+head(fordgobike2018)
+
+fordgobike_subset2 <- as.matrix(fordgobike_subset)
+
+set.seed <- 123454321
+
+tic()
+
+cl <- bigkmeans(fordgobike_subset2, 3, nstart=8)
+
+toc()
+
+head(cl$cluster)
+
+cl$centers
+
+fordgobike_subset %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude, color=cl$cluster)) +
+  geom_point()
+
+fordgobike2018 <- fordgobike2018 %>% mutate(clust = cl$cluster)
+
+```
+
+
+```{r}
+# City of Oakland  c(-122.2711, 37.8044) )
+
+# https://stackoverflow.com/questions/20621250/simple-approach-to-assigning-clusters-for-new-data-after-k-means-clustering
+
+cl$centers
+
+closest.cluster <- function(x) {
+  cluster.dist <- apply(cl$centers, 1, function(y) sqrt(sum((x-y)^2)))
+  return(which.min(cluster.dist)[1])
+}
+
+oak <- closest.cluster(c(-122.2711, 37.8044))
+oak
+
+oakland <- fordgobike2018 %>% filter(clust == oak)
+
+oakland %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude)) +
+  geom_point()
+```
+
+
+
+```{r}
+tic()
+
+cl.km <- kmeans(fordgobike_subset, 3)
+
+toc()
+
+cl.km$centers
+
+# City of Oakland  c(-122.2711, 37.8044) )
+
+fordgobike_subset %>% ggplot(aes(x=start_station_longitude, y=start_station_latitude, color=cl.km$cluster)) +
+  geom_point()
+  
+
+```
+
+```{r}
+dim(cl$centers)
+
+bayarea <- get_map(location = c(lon=cl$centers[oak,1], lat=cl$centers[oak,2]), zoom = 12, maptype = "roadmap")
+
+ggmap(bayarea)
+
+ggmap(bayarea) +
+  geom_point(data = oakland, aes(x = start_station_longitude, y = start_station_latitude), size = 0.2, shape = 19) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()
+        )
+
+ggsave(filename="oakland.jpg", width = 4, height = 4, units = "cm", plot=last_plot())
+
+ggmap(bayarea) +
+  geom_point(data = oakland, aes(x = start_station_longitude, y = start_station_latitude), size = 1, shape = 19) +
+  ggtitle("Oakland Ford Go Bike stations")
+```
+
+
+
+```{r}
+bayarea <- get_map(location = "hayward")
+
+ggmap(bayarea)
+
+ggmap(bayarea) +
+  geom_point(data = fordgobike2018, aes(x = start_station_longitude, y = start_station_latitude, color  = clust, alpha = 0.1), size = 0.2, shape = 19) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(),
+        legend.position="none")
+
+ggsave(filename="bayarea.jpg", width = 4, height = 4, units = "cm", plot=last_plot())
+
+ggmap(bayarea) +
+  geom_point(data = fordgobike2018, aes(x = start_station_longitude, y = start_station_latitude, color  = clust, alpha = 0.1), size = 1, shape = 19) +
+  ggtitle("Bay Area Ford Go Bike stations")
+```
+
+
+Gender of users
+
+```{r}
+
+fordgobike2018 %>% ggplot(aes(x=member_gender, y=duration_sec)) + geom_bar(stat="Identity") +
+  ggtitle("Bay Area")
+
+oakland %>% ggplot(aes(x=member_gender, y=duration_sec)) + geom_bar(stat="Identity") +
+  ggtitle("Oakland")
+```
+
+Duration of rides in the Bay Area
+
+```{r}
+fordgobike2018 %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+fordgobike2018 %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+fordgobike2018 %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+
+fordgobike2018 %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+```
+
+Durations of rides in Oakland
+
+
+```{r}
+oakland %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+oakland %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) 
+
+oakland %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+
+oakland %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(member_gender ~ .)
+```
+
+Duration by City
+
+```{r}
+fordgobike2018 %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+fordgobike2018 %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+fordgobike2018 %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+fordgobike2018 %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+```
+
+Duration in Oakland
+
+```{r}
+oakland %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+oakland %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() +
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+oakland %>% ggplot(aes(x=duration_sec, y=..density..)) + 
+  scale_x_continuous(limits = c(0, 10000)) +
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+
+oakland %>% ggplot(aes(log(x=duration_sec), y=..density..)) + 
+  geom_histogram() + 
+  geom_density(aes(y=..density..)) +
+  facet_grid(clust ~ .) 
+```
+
+
+
+```{r}
+
+fordgobike2018 %>% filter(clust == 1) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec)) %>%
+  kable(format = "rst")
+
+
+fordgobike2018 %>% filter(clust == 2) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec)) %>%
+  kable(format = "rst")
+
+
+fordgobike2018 %>% filter(clust == 3) %>% 
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec)) %>%
+  kable(format = "rst")
+
+```
+
+
+```{r}
+oakland %>%
+  group_by( member_gender ) %>%
+  summarize(dur_mean = mean(duration_sec), dur_sd = sd(duration_sec)) %>%
+  kable(format = "rst")
+
+```
+
+

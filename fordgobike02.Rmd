@@ -1,0 +1,163 @@
+---
+title: "Ford Go Bike API"
+output:
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+---
+
+[General Bikeshare Feed Specification (GBFS)](https://github.com/NABSA/gbfs/blob/master/gbfs.md)
+
+R Package that connects to the GBFS API
+
+[R gbfs](https://github.com/ds-civic-data/gbfs)
+
+North American Bike Share Association
+
+[NBSA](https://github.com/NABSA) [system.csv](https://github.com/NABSA/gbfs/blob/master/systems.csv)
+
+
+
+```{r, eval=FALSE}
+library(devtools)
+
+install_github("ds-civic-data/gbfs")
+```
+
+```{r message=FALSE}
+library(gbfs)
+library(tidyverse)
+library(ggmap)
+library(kableExtra)
+```
+
+```{r}
+withr::with_dir(tempdir(), get_gbfs(city = "https://gbfs.fordgobike.com/gbfs/gbfs.json", feeds = "all", directory = "pdx_gbfs"))
+
+withr::with_dir(tempdir(), list.files("pdx_gbfs"))
+```
+
+```{r}
+station_information <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/station_information.rds"))
+head(station_information)
+
+station_information %>% ggplot(aes(x=lon, y=lat, color=region_id)) + geom_point()
+
+bayarea <- get_map(location = "hayward")
+
+ggmap(bayarea) +
+  geom_point(data = station_information, aes(x = lon, y = lat,  color  = region_id, alpha = 0.1), size = 2, shape = 19)  # 21
+
+```
+
+```{r}
+system_regions <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_regions.rds"))
+
+system_regions %>% 
+  head() %>%
+  kable(format = "rst")
+
+```
+
+East Bay
+
+```{r}
+station_information <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/station_information.rds"))
+head(station_information)
+
+eastbay.stations <- station_information %>% filter( region_id == "12" | region_id == "13" | region_id == "14")
+head(eastbay.stations)
+
+eastbay.stations %>% ggplot(aes(x=lon, y=lat, color=region_id)) + 
+  geom_point() +
+  scale_colour_gradient(low = "orange", high = "blue")
+
+bayarea <- get_map(location = c(lon=-122.2711, lat=37.8044), zoom = 12, maptype = "roadmap")
+
+ggmap(bayarea)
+
+ggmap(bayarea) +
+  geom_point(data = eastbay.stations, aes(x = lon, y = lat,  color = region_id, alpha = 0.1), size = 2, shape = 19)  +
+  scale_colour_gradient(low = "orange", high = "blue")
+
+```
+
+Oakland
+
+```{r}
+head(station_information)
+
+glimpse(station_information)
+
+oakland.stations <- station_information %>% filter( region_id == "12")
+
+head(oakland.stations)
+
+oakland.stations %>% ggplot(aes(x=lon, y=lat, color=region_id)) + 
+  geom_point() +
+  scale_colour_gradient(low = "orange", high = "blue")
+
+bayarea <- get_map(location = c(lon=-122.2711, lat=37.8044), zoom = 12, maptype = "roadmap")
+
+ggmap(bayarea)
+
+ggmap(bayarea) +
+  geom_point(data = oakland.stations, aes(x = lon, y = lat,  color = region_id, alpha = 0.1), size = 2, shape = 19)  +
+    theme(axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank(),
+        legend.position="none")
+  
+```
+
+Near real time data
+
+```{r}
+station_status <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/station_status.rds"))
+head(station_status)
+#tail(station_status) 
+#dim(station_status)
+
+#head(oakland.stations)
+#dim(oakland.stations)
+
+station_status %>% count(station_id)
+
+
+oakland.status <- oakland.stations %>% left_join(station_status, by = "station_id" )
+  
+#head(oakland.status)
+#tail(oakland.status)
+#dim(oakland.status)
+
+oakland.status %>% 
+  summarise(n=n(),mean=mean(num_bikes_available),min=min(num_bikes_available),max=max(num_bikes_available)) %>%
+  kable(format = "rst")
+
+oakland.status %>% group_by(name) %>%
+  summarise(n=n(),mean=mean(num_bikes_available),min=min(num_bikes_available),max=max(num_bikes_available)) %>%
+  kable(format = "rst")
+
+```
+
+```{r}
+system_alerts <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_alerts.rds"))
+system_alerts %>% unlist() %>% 
+  head() 
+```
+
+```{r}
+system_information <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_information.rds"))
+system_information %>% 
+  head() 
+```
+
+```{r}
+system_regions <- withr::with_dir(tempdir(), readRDS("pdx_gbfs/system_regions.rds"))
+
+system_regions %>% 
+  head() %>%
+  kable(format = "rst")
+
+```
+
+
